@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Main Page</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h2>Main Frontend</h2>
+<a href="customize.html">Customize Layout</a>
+
+<div id="app"></div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="common.js"></script>
+<script>
+  const layoutData = getLayout();
+
+  function render(layout) {
+    $("#app").empty();
+
+    layout.layout.forEach(item => {
+      if (item.type === "button") {
+        const btn = $("<button></button>")
+          .text(item.text)
+          .css({
+            position: "absolute",
+            width: item.width,
+            height: item.height,
+            backgroundColor: item.color,
+            left: item.x,
+            top: item.y
+          });
+
+        $("#app").append(btn);
+      }
+    });
+  }
+
+  render(layoutData);
+</script>
+
+</body>
+</html>

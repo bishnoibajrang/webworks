@@ -1,0 +1,23 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
+#app {
+  position: relative;
+  width: 600px;
+  height: 400px;
+  border: 2px solid #333;
+}
+
+button {
+  cursor: pointer;
+}
+
+.control {
+  margin-bottom: 10px;
+}
+
+input {
+  margin-left: 5px;
+}
