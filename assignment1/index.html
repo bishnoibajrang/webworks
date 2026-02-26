@@ -1,43 +1,509 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Main Page</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Advanced Slideshow Builder</title>
+
+<style>
+body { font-family: Arial; padding: 20px; }
+
+#editor {
+  position: relative;
+  min-height: 600px;
+}
+
+/* Editable wrapper */
+.box {
+  position: absolute;
+  cursor: move;
+}
+
+.selected { outline: 2px solid #007bff; }
+
+/* Resize handles */
+.handle {
+  width: 8px;
+  height: 8px;
+  background: #007bff;
+  position: absolute;
+  z-index: 10;
+}
+
+.n{top:-4px;left:50%;transform:translateX(-50%);cursor:n-resize;}
+.s{bottom:-4px;left:50%;transform:translateX(-50%);cursor:s-resize;}
+.e{right:-4px;top:50%;transform:translateY(-50%);cursor:e-resize;}
+.w{left:-4px;top:50%;transform:translateY(-50%);cursor:w-resize;}
+.ne{right:-4px;top:-4px;cursor:ne-resize;}
+.nw{left:-4px;top:-4px;cursor:nw-resize;}
+.se{right:-4px;bottom:-4px;cursor:se-resize;}
+.sw{left:-4px;bottom:-4px;cursor:sw-resize;}
+
+.box .content {
+  width: 100%;
+  height: 100%;
+}
+
+.box button,
+.box input[type="file"],
+.box input[type="number"] {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.box button {
+  font-size: clamp(10px, 1.5vw, 18px);
+  white-space: normal;
+}
+
+.customize .content * {
+  pointer-events: none;
+}
+
+/* Allow Apply button during customize */
+.customize #applyBtn {
+  pointer-events: auto;
+}
+</style>
 </head>
+
 <body>
 
-<h2>Main Frontend</h2>
-<a href="customize.html">Customize Layout</a>
+<div id="editor">
 
-<div id="app"></div>
+  <!-- Toolbar Buttons -->
+  <div class="box" data-id="customizeBtnBox" style="top:10px;left:20px;width:110px;height:40px">
+    <div class="content">
+      <button id="customizeBtn">Customize</button>
+    </div>
+  </div>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="common.js"></script>
+  <div class="box" data-id="applyBtnBox" style="top:10px;left:150px;width:110px;height:40px">
+    <div class="content">
+      <button id="applyBtn" disabled>Apply</button>
+    </div>
+  </div>
+
+  <div class="box" data-id="saveBtnBox" style="top:10px;left:280px;width:120px;height:40px">
+    <div class="content">
+      <button id="saveBtn">Save JSON</button>
+    </div>
+  </div>
+
+  <div class="box" data-id="loadBtnBox" style="top:10px;left:420px;width:130px;height:40px">
+    <div class="content">
+      <button id="loadBtn">Load Project</button>
+      <input type="file" id="loadJson" accept=".json" hidden>
+    </div>
+  </div>
+
+  <div class="box" data-id="finalizeBtnBox" style="top:10px;left:570px;width:150px;height:40px">
+    <div class="content">
+      <button id="finalizeBtn">Finalize Order</button>
+    </div>
+  </div>
+
+  <!-- Image Upload -->
+  <div class="box" data-id="input" style="top:80px;left:20px;width:200px;height:40px">
+    <div class="content">
+      <input type="file" id="imageInput" multiple>
+    </div>
+  </div>
+
+  <div class="box" data-id="thumbs" style="top:130px;left:20px;width:250px;height:100px">
+    <div class="content" id="thumbnailContainer" style="border:1px solid #ccc;overflow:auto">
+      Thumbnails
+    </div>
+  </div>
+
+  <div class="box" data-id="reorderBox" style="top:250px;left:20px;width:250px;height:180px">
+    <div class="content" style="border:1px solid #444;overflow:auto">
+      <b>Reorder Selected Images</b>
+      <div id="reorderContainer"></div>
+    </div>
+  </div>
+
+  <div class="box" data-id="delayBox" style="top:450px;left:20px;width:200px;height:40px">
+    <div class="content">
+      <input type="number" id="delayInput" value="2">
+    </div>
+  </div>
+
+  <div class="box" data-id="startBtnBox" style="top:500px;left:20px;width:150px;height:40px">
+    <div class="content">
+      <button id="startBtn">Start</button>
+    </div>
+  </div>
+
+  <div class="box" data-id="slideshow" style="top:80px;left:320px;width:400px;height:300px">
+    <div class="content" style="border:1px solid #000">
+      <img id="slideImage" style="width:100%;height:100%;object-fit:contain">
+    </div>
+  </div>
+
+</div>
+
 <script>
-  const layoutData = getLayout();
 
-  function render(layout) {
-    $("#app").empty();
+/* ---------------- GLOBAL STATE ---------------- */
 
-    layout.layout.forEach(item => {
-      if (item.type === "button") {
-        const btn = $("<button></button>")
-          .text(item.text)
-          .css({
-            position: "absolute",
-            width: item.width,
-            height: item.height,
-            backgroundColor: item.color,
-            left: item.x,
-            top: item.y
-          });
+let imagesData = [];
+let selectedImages = [];
+let index = 0;
+let timer;
+let customize = false;
+let active = null;
 
-        $("#app").append(btn);
-      }
-    });
+const boxes = document.querySelectorAll(".box");
+const editor = document.getElementById("editor");
+
+/* ---------------- CUSTOMIZE MODE ---------------- */
+
+customizeBtn.onclick = () => {
+  customize = true;
+  editor.classList.add("customize");
+  applyBtn.disabled = false;
+};
+
+applyBtn.onclick=()=>{
+  customize=false;
+  editor.classList.remove("customize");
+  applyBtn.disabled=true;
+  clearSelection();
+};
+
+/* Block button clicks only during customize */
+// document.querySelectorAll("button").forEach(btn=>{
+//   btn.addEventListener("click", e=>{
+//     if (customize && btn.id !== "applyBtn" && btn.id !== "customizeBtn") {
+//       e.preventDefault();
+//       e.stopPropagation();
+//     }
+//   });
+// });
+
+/* ---------------- DRAG + RESIZE ---------------- */
+
+const dirs=["n","s","e","w","ne","nw","se","sw"];
+const handles={};
+
+dirs.forEach(d=>{
+  const h=document.createElement("div");
+  h.className="handle "+d;
+  handles[d]=h;
+});
+
+boxes.forEach(b=>{
+  b.addEventListener("mousedown",e=>{
+    if(!customize) return;
+
+    e.preventDefault();
+    selectBox(b);
+
+    if(e.target.classList.contains("handle")){
+      startResize(e,e.target.classList[1]);
+    }else{
+      startMove(e);
+    }
+  });
+});
+
+function selectBox(b){
+  clearSelection();
+  active=b;
+  b.classList.add("selected");
+  Object.values(handles).forEach(h=>b.appendChild(h));
+}
+
+function clearSelection(){
+  if(!active) return;
+  active.classList.remove("selected");
+  Object.values(handles).forEach(h=>h.remove());
+  active=null;
+}
+
+let sx,sy,sl,st,sw,sh,currentDir;
+
+function startMove(e){
+  sx=e.clientX; sy=e.clientY;
+  sl=active.offsetLeft; st=active.offsetTop;
+  document.onmousemove=move;
+  document.onmouseup=stop;
+}
+
+function move(e){
+  active.style.left=sl+(e.clientX-sx)+"px";
+  active.style.top=st+(e.clientY-sy)+"px";
+}
+
+function startResize(e,dir){
+  currentDir=dir;
+  sx=e.clientX; sy=e.clientY;
+  sl=active.offsetLeft; st=active.offsetTop;
+  sw=active.offsetWidth; sh=active.offsetHeight;
+  document.onmousemove=resize;
+  document.onmouseup=stop;
+}
+
+function resize(e){
+  let dx=e.clientX-sx;
+  let dy=e.clientY-sy;
+
+  let nw=sw, nh=sh, nl=sl, nt=st;
+
+  if(currentDir.includes("e")) nw=sw+dx;
+  if(currentDir.includes("s")) nh=sh+dy;
+  if(currentDir.includes("w")){ nw=sw-dx; nl=sl+dx; }
+  if(currentDir.includes("n")){ nh=sh-dy; nt=st+dy; }
+
+  if(nw>50 && nh>30){
+    active.style.width=nw+"px";
+    active.style.height=nh+"px";
   }
 
-  render(layoutData);
+  active.style.left=nl+"px";
+  active.style.top=nt+"px";
+}
+
+function stop(){
+  document.onmousemove=null;
+  document.onmouseup=null;
+}
+
+/* ---------------- SLIDESHOW ---------------- */
+
+imageInput.onchange=async e=>{
+  imagesData=[]; selectedImages=[];
+  thumbnailContainer.innerHTML="";
+  for(let file of [...e.target.files]){
+    const base64=await toBase64(file);
+    imagesData.push({name:file.name,data:base64});
+    createThumbnail(base64);
+  }
+};
+
+function createThumbnail(src){
+  const img=document.createElement("img");
+  img.src=src; img.width=60;
+  img.style.margin="5px";
+  img.style.cursor="pointer";
+  img.style.border="2px solid transparent";
+
+  img.onclick=()=>{
+    if(selectedImages.includes(src)){
+      selectedImages=selectedImages.filter(s=>s!==src);
+      img.style.border="2px solid transparent";
+    }else{
+      selectedImages.push(src);
+      img.style.border="2px solid #007bff";
+    }
+  };
+  thumbnailContainer.appendChild(img);
+}
+
+startBtn.onclick=()=>{
+  if(!selectedImages.length){ alert("Select images"); return; }
+  clearInterval(timer);
+  index=0;
+  slideImage.src=selectedImages[index];
+  timer=setInterval(()=>{
+    index=(index+1)%selectedImages.length;
+    slideImage.src=selectedImages[index];
+  },delayInput.value*1000);
+};
+
+function toBase64(file){
+  return new Promise((res,rej)=>{
+    const reader=new FileReader();
+    reader.onload=()=>res(reader.result);
+    reader.onerror=rej;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ---------------- SAVE / LOAD ---------------- */
+
+saveBtn.onclick=()=>{
+  const data={
+    delay:parseInt(delayInput.value),
+    images:imagesData,
+    selected:selectedImages,
+    layout:[...boxes].map(b=>({
+      id:b.dataset.id,
+      top:b.style.top,
+      left:b.style.left,
+      width:b.style.width,
+      height:b.style.height
+    }))
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="slideshow.json";
+  a.click();
+};
+
+loadBtn.onclick=()=>{ if(!customize) loadJson.click(); };
+
+loadJson.onchange=e=>{
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=evt=>{
+    const data=JSON.parse(evt.target.result);
+    loadSlideshow(data);
+  };
+  reader.readAsText(file);
+};
+
+function loadSlideshow(data){
+
+  delayInput.value = data.delay || 2;
+
+  // Restore layout
+  data.layout.forEach(item=>{
+    const box=document.querySelector(`[data-id="${item.id}"]`);
+    if(!box) return;
+    box.style.top=item.top;
+    box.style.left=item.left;
+    box.style.width=item.width;
+    box.style.height=item.height;
+  });
+
+  imagesData = data.images || [];
+  selectedImages = data.selected || [];
+
+  thumbnailContainer.innerHTML = "";
+
+  imagesData.forEach(img => {
+
+    const thumb = document.createElement("img");
+    thumb.src = img.data;
+    thumb.width = 60;
+    thumb.style.margin = "5px";
+    thumb.style.cursor = "pointer";
+    thumb.style.border = selectedImages.includes(img.data)
+      ? "2px solid #007bff"
+      : "2px solid transparent";
+
+    thumb.onclick = () => {
+      if (selectedImages.includes(img.data)) {
+        selectedImages = selectedImages.filter(s => s !== img.data);
+        thumb.style.border = "2px solid transparent";
+      } else {
+        selectedImages.push(img.data);
+        thumb.style.border = "2px solid #007bff";
+      }
+    };
+
+    thumbnailContainer.appendChild(thumb);
+  });
+
+  // rebuild reorder list if needed
+  if(selectedImages.length){
+    buildReorderUI();
+  }
+}
+
+/* ---------------- FINALIZE + DRAG ORDER ---------------- */
+
+const reorderContainer = document.getElementById("reorderContainer");
+
+finalizeBtn.onclick = () => {
+
+  if (customize) return;   // prevent during customize
+
+  if (!selectedImages.length) {
+    alert("No selected images to reorder.");
+    return;
+  }
+
+  buildReorderUI();
+};
+
+function buildReorderUI() {
+
+  reorderContainer.innerHTML = "";
+
+  selectedImages.forEach((src, i) => {
+
+    const item = document.createElement("div");
+    item.draggable = true;
+    item.dataset.index = i;
+
+    item.style.display = "flex";
+    item.style.alignItems = "center";
+    item.style.border = "1px solid #ccc";
+    item.style.margin = "5px";
+    item.style.padding = "4px";
+    item.style.background = "#f9f9f9";
+
+    const img = document.createElement("img");
+    img.src = src;
+    img.width = 50;
+
+    const label = document.createElement("span");
+    label.textContent = " Image " + (i + 1);
+    label.style.margin = "0 10px";
+
+    // 🔵 CLONE BUTTON
+    const cloneBtn = document.createElement("button");
+    cloneBtn.textContent = "Clone";
+    cloneBtn.style.marginRight = "5px";
+
+    cloneBtn.onclick = () => {
+      selectedImages.splice(i + 1, 0, src);
+      buildReorderUI();
+    };
+
+    // 🔴 DELETE BUTTON
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+
+    deleteBtn.onclick = () => {
+      selectedImages.splice(i, 1);
+      buildReorderUI();
+    };
+
+    item.appendChild(img);
+    item.appendChild(label);
+    item.appendChild(cloneBtn);
+    item.appendChild(deleteBtn);
+
+    // Drag logic
+    item.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("index", i);
+    });
+
+    item.addEventListener("dragover", e => {
+      e.preventDefault();
+      item.style.background = "#e0f0ff";
+    });
+
+    item.addEventListener("dragleave", () => {
+      item.style.background = "#f9f9f9";
+    });
+
+    item.addEventListener("drop", e => {
+
+      e.preventDefault();
+      item.style.background = "#f9f9f9";
+
+      const fromIndex = parseInt(e.dataTransfer.getData("index"));
+      const toIndex = i;
+
+      if (fromIndex === toIndex) return;
+
+      const moved = selectedImages.splice(fromIndex, 1)[0];
+      selectedImages.splice(toIndex, 0, moved);
+
+      buildReorderUI();
+    });
+
+    reorderContainer.appendChild(item);
+  });
+}
+
 </script>
 
 </body>

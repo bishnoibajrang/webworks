@@ -1,33 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
-    <script src="script.js">
-    </script>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Image Slideshow Prototype</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body>
-    <!-- <h1>Hello World</h1> -->
-    <div class="wrapper">
-        <div class="input-section">
-            <div class="input-area">
-                <p>Select the images</p>
-                <input type="file" id="input-image" multiple>
-            </div>
-            <div class="preview-section">
-            </div>
-            <p>Select the delay</p>
-            <input type="number" name="number_input" id="number_input">
-            <p></p>
-            <button type="submit" name="submitBtn" onclick="submit_function()">Submit</button>
-        </div>
-        <div class="slideshow-section">
-            <p></p>
-            <div name="slideshow" id="slideshow">Slideshow</div>
-        </div>
-    </div>
+  
+  <h1>Image Slideshow Application</h1>
+
+  <!-- Step 1: Select images -->
+  <input type="file" id="fileInput" accept="image/*" multiple>
+
+  <!-- Step 2: Show thumbnails -->
+  <h2>Image Table</h2>
+  <div id="imageTable"></div>
+
+  <!-- Step 3: Finalize selection -->
+  <button id="finalizeBtn">Finalize Selection</button>
+
+  <!-- Step 4: Reorder -->
+  <h2>Selected Images (Reorder)</h2>
+  <ul id="selectedList"></ul>
+
+  <label>
+      Slide Delay (ms):
+      <input type="number" id="delayInput" value="2000" min="500">
+  </label>
+  <br><br>
+  <button id="startSlideshowBtn">Start Slideshow</button>
+
+  <!-- Step 5: Slideshow -->
+  <div id="slideshow"></div>
+
+
+  <script src="script.js"></script>
 </body>
 </html>

@@ -1,4 +1,45 @@
-body{
-    background-color: white;
-    color: black;
+body {
+  font-family: Arial, sans-serif;
+}
+
+#canvas {
+  position: relative;
+  border: 1px solid #444;
+  margin: 20px;
+}
+
+.ui-btn {
+  position: absolute;
+  cursor: pointer;
+}
+
+.editor .ui-btn {
+  outline: 1px dashed #333;
+}
+
+.resize {
+  width: 10px;
+  height: 10px;
+  background: #333;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  cursor: se-resize;
+}
+
+#editor button {
+  position: absolute;
+  cursor: move;
+  box-sizing: border-box;
+}
+
+/* resize handle */
+.resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  background: black;
+  cursor: se-resize;
 }
